@@ -57,4 +57,10 @@ $("reset").onclick=()=>{stop();left=rest;clock();$("timerstatus").textContent="N
 $("finish").onclick=()=>{let done=state.done[day].flat().filter(Boolean).length,t=total(plans[day]);if(done===t){state.history.push({day:day+1,date:new Date().toISOString(),sets:done});save();$("message").textContent="Bra jobbat! Alla set i passet är avklarade."}else $("message").textContent=done+" av "+t+" set klara. Fortsätt när du är redo."};
 render();clock();
 if("serviceWorker" in navigator && location.protocol.startsWith("http"))navigator.serviceWorker.register("./sw.js").catch(()=>{});
-</script></body></html>
+</script>
+
+<script src="history.js"></script>
+
+</body>
+
+</html>
