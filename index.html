@@ -38,9 +38,11 @@ h2{font-size:17px;margin:4px 0 10px}
 .choices{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
 .actions{display:flex;gap:8px;margin-top:10px}.actions button{flex:1}
 .exercise{border:1px solid var(--line);border-radius:13px;padding:13px;margin:9px 0}
+.exercise.active-exercise{border-color:var(--lime);box-shadow:0 0 0 1px #c8ff0033}
+#timerDock{margin:14px 0 18px;border-color:var(--lime)}
+#timerDock .timer{padding:8px 4px}
+.timer-hint{font-size:11px;color:var(--muted);text-align:center;margin-top:4px}
 .exercise-name{font-weight:750;font-size:14px}
-.exercise-visual{width:100%;display:block;aspect-ratio:1/1;max-height:360px;object-fit:contain;object-position:center;border:1px solid #3b4935;border-radius:11px;margin:10px 0 12px;background:#080b0a}
-.visual-pending{height:110px;display:flex;align-items:center;justify-content:center;border:1px dashed #566344;border-radius:11px;margin:10px 0 12px;color:var(--lime);font-size:11px;letter-spacing:1.5px;background:radial-gradient(ellipse at center,#1b2618,#080b0a 70%)}
 .sets{display:flex;gap:7px;margin:12px 0;flex-wrap:wrap}
 .set{width:36px;height:36px;border-radius:50%;padding:0}
 .set.done{background:var(--lime);color:#111;border-color:var(--lime)}
@@ -85,25 +87,26 @@ footer{text-align:center;color:#777;font-size:10px;letter-spacing:1px;padding:20
     <div class="muted" id="count">0 av 8 övningar klara</div>
   </section>
 
-<section class="card" id="timerDock">
+  <div class="row"><h2>Övningar</h2><span class="muted">Markera set när det är klart</span></div>
+  <div id="exerciseList"></div>
+
+  <section class="card" id="timerDock" hidden>
+    <div class="row"><h2>Vilotimer</h2><span class="muted">under aktiv övning</span></div>
     <div class="choices" id="rests">
       <button data-s="60">60 SEK</button>
       <button class="active" data-s="90">90 SEK</button>
       <button data-s="120">120 SEK</button>
     </div>
-    <section class="card" id="timerDock">
-    <div class="row"><h2>Vilotimer</h2>
+    <div class="timer">
       <div class="clock" id="clock">01:30</div>
       <div class="muted" id="timerstatus">REDO FÖR NÄSTA SET</div>
+      <div class="timer-hint" id="timerhint">Vilan anpassas automatiskt efter vikten</div>
     </div>
     <div class="actions">
       <button class="lime" id="start">STARTA VILA</button>
       <button id="reset">NOLLSTÄLL</button>
     </div>
   </section>
-
-  <div class="row"><h2>Övningar</h2><span class="muted">Markera set när det är klart</span></div>
-  <div id="exerciseList"></div>
 
   <section class="card">
     <h2>Passöversikt</h2>
@@ -125,41 +128,6 @@ const plans=[
  {title:"SHOULDERS, BACK & CORE",items:[["Cable Face Pull",4],["DB Shoulder Press",4],["Cable Lateral Raise",3],["Cable Reverse Fly",3],["Barbell Row Reverse Grip",3],["Cable Row Overhand Grip",3],["Reverse Grip Pulldown",4],["Barbell Glute Bridge",3],["Reverse Crunch",3],["Rope Crunch",4],["Russian Twist",3]]}
 ];
 const key="omega-tracker-v1";
-const exerciseArt={
- "DB Bicep Curl":"images/db-bicep-curl.webp",
- "Close Grip Bench Press":"images/close-grip-bench-press.webp",
- "EZ Bar Curl":"images/ez-bar-curl.webp",
- "EZ Bar Skullcrusher":"images/ez-bar-skullcrusher.webp",
- "Back Squat":"images/back-squat.webp",
- "DB Bulgarian Split Squat":"images/bulgarian-split-squat.webp",
- "Leg Extension":"images/leg-extension.webp",
- "Machine Adduction":"images/machine-adduction.webp",
- "Back Extension":"images/back-extension.webp",
- "Superman":"images/superman.webp",
- "Machine Back Extension":"images/machine-back-extension.webp",
- "DB Row":"images/db-row.webp",
- "Lat Pulldown Neutral Grip":"images/lat-pulldown-neutral-grip.webp",
- "Row":"images/row.webp",
- "Plank":"images/plank.webp",
- "Russian Twist":"images/russian-twist.webp",
- "Reverse Crunch":"images/reverse-crunch.webp",
- "Stiff Legged Deadlift":"images/stiff-legged-deadlift.webp",
- "Calf Press on Leg Press":"images/calf-press-leg-press.webp",
- "Incline Bench Press":"images/incline-bench-press.webp",
- "DB Bench Press":"images/db-bench-press.webp",
- "Mid Cable Crossover Fly":"images/mid-cable-crossover-fly.webp",
- "Cable Face Pull":"images/cable-face-pull.webp",
- "DB Shoulder Press":"images/db-shoulder-press.webp",
- "Cable Lateral Raise":"images/cable-lateral-raise.webp",
- "Cable Reverse Fly":"images/cable-reverse-fly.webp",
- "Barbell Row Reverse Grip":"images/barbell-row-reverse-grip.webp",
- "Cable Row Overhand Grip":"images/cable-row-overhand-grip.webp",
- "Reverse Grip Pulldown":"images/reverse-grip-pulldown.webp",
- "Barbell Glute Bridge":"images/barbell-glute-bridge.webp",
- "Rope Crunch":"images/rope-crunch.webp"
-};
-
- 
 const freshState=()=>({
  done:plans.map(p=>p.items.map(x=>Array(x[1]).fill(false))),
  records:plans.map(p=>p.items.map(()=>({weight:"",reps:""}))),
@@ -170,40 +138,69 @@ try{
  state=JSON.parse(localStorage.getItem(key))||freshState();
  if(!Array.isArray(state.done)||state.done.length!==plans.length)state=freshState();
 }catch(e){state=freshState()}
-let day=0,rest=90,left=90,tick=null;
+let day=0,rest=90,left=90,tick=null,activeExercise=0,audioCtx=null;
 const $=id=>document.getElementById(id);
 const save=()=>localStorage.setItem(key,JSON.stringify(state));
 const total=p=>p.items.reduce((a,x)=>a+x[1],0);
-
 function clock(){
  $("clock").textContent=String(Math.floor(left/60)).padStart(2,"0")+":"+String(left%60).padStart(2,"0");
 }
 function stop(){
  clearInterval(tick);tick=null;
- $("start").textContent="STARTA VILA";
+ if($("start"))$("start").textContent="STARTA VILA";
+}
+function unlockBell(){
+ try{
+  const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+  if(!AudioContextClass)return;
+  if(!audioCtx)audioCtx=new AudioContextClass();
+  if(audioCtx.state==="suspended")audioCtx.resume();
+ }catch(e){}
+}
+function playBell(){
+ try{
+  if(!audioCtx)return;
+  if(audioCtx.state==="suspended")audioCtx.resume();
+  const now=audioCtx.currentTime;
+  [0,0.32].forEach((delay,index)=>{
+   const t=now+delay;
+   [880,1320,1760].forEach((freq,n)=>{
+    const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();
+    osc.type=n===0?"triangle":"sine";osc.frequency.value=freq*(index?0.995:1);
+    gain.gain.setValueAtTime(0.0001,t);
+    gain.gain.exponentialRampToValueAtTime(n===0?0.22:0.075,t+0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001,t+1.05);
+    osc.connect(gain);gain.connect(audioCtx.destination);osc.start(t);osc.stop(t+1.08);
+   });
+  });
+ }catch(e){}
+}
+function finishRest(){
+ stop();left=0;clock();
+ $("timerstatus").textContent="VILAN KLAR · NÄSTA SET";
+ $("start").textContent="STARTA IGEN";
+ playBell();
+ if(navigator.vibrate)navigator.vibrate([250,120,250,120,400]);
+}
+function runTimer(){
+ stop();
+ $("start").textContent="PAUSA";
+ tick=setInterval(()=>{left--;clock();if(left<=0)finishRest();},1000);
 }
 function startRest(seconds){
- stop();rest=seconds;left=seconds;clock();
+ rest=seconds;left=seconds;clock();
  $("timerstatus").textContent="AUTOMATISK VILA";
- $("start").textContent="PAUSA";
- tick=setInterval(()=>{
-  left--;clock();
-  if(left<=0){
-   stop();left=0;clock();
-   $("timerstatus").textContent="VILAN KLAR · NÄSTA SET";
-   $("start").textContent="STARTA IGEN";
-   if(navigator.vibrate)navigator.vibrate([200,100,200]);
-  }
- },1000);
+ $("timerhint").textContent="";
+ runTimer();
 }
 function openWorkout(index){
- day=index;stop();left=rest;clock();renderWorkout();
+ day=index;activeExercise=0;stop();left=rest;clock();renderWorkout();
  $("homePage").hidden=true;
  $("workoutPage").hidden=false;
  window.scrollTo(0,0);
 }
 function goHome(){
- stop();
+ stop();$("workoutPage").appendChild($("timerDock"));$("timerDock").hidden=true;
  $("workoutPage").hidden=true;
  $("homePage").hidden=false;
  renderHome();
@@ -223,6 +220,7 @@ function renderHome(){
  $("weekPct").textContent=Math.round(done/all*100)+"% av veckans set klara";
 }
 function renderWorkout(){
+ const dock=$("timerDock");$("workoutPage").appendChild(dock);
  const p=plans[day],d=state.done[day];
  const done=d.flat().filter(Boolean).length,t=total(p);
  const ex=d.filter(a=>a.every(Boolean)).length;
@@ -235,9 +233,8 @@ function renderWorkout(){
  $("setsTotal").textContent=t;
  $("exDone").textContent=ex;
  $("exerciseList").innerHTML=p.items.map((x,i)=>`
-  <article class="exercise">
+  <article class="exercise" data-exercise="${i}">
    <div class="row"><span class="exercise-name">${i+1}. ${x[0]}</span><span class="muted">${x[1]} SET</span></div>
-   ${exerciseArt[x[0]]?`<img class="exercise-visual" src="${exerciseArt[x[0]]}" alt="3D-illustration av ${x[0]}" loading="lazy">`:`<div class="visual-pending">3D-ILLUSTRATION PÅ VÄG</div>`}
    <div class="sets">
     ${d[i].map((v,j)=>`<button class="set ${v?'done':''}" data-i="${i}" data-j="${j}">${v?'✓':j+1}</button>`).join("")}
     <span class="muted" style="align-self:center;margin-left:auto">${d[i].filter(Boolean).length}/${x[1]}</span>
@@ -247,15 +244,21 @@ function renderWorkout(){
     <label>REPS<input type="number" min="0" step="1" placeholder="reps" data-r="${i}" value="${state.records[day][i].reps}"></label>
    </div>
   </article>`).join("");
+ const activeCard=$("exerciseList").querySelector(`[data-exercise="${activeExercise}"]`)||$("exerciseList").querySelector(".exercise");
+ if(activeCard){activeCard.classList.add("active-exercise");activeCard.insertAdjacentElement("afterend",dock);dock.hidden=false;}
 
  $("exerciseList").querySelectorAll("[data-i]").forEach(b=>b.addEventListener("click",()=>{
   const i=Number(b.dataset.i),j=Number(b.dataset.j);
   const wasDone=state.done[day][i][j];
-  state.done[day][i][j]=!wasDone;
+  if(!wasDone)unlockBell();
+  state.done[day][i][j]=!wasDone;activeExercise=i;
   save();renderWorkout();renderHome();
   if(!wasDone){
    const weight=Number(state.records[day][i].weight||0);
-   startRest(weight===0?30:(weight>25?120:90));
+   const seconds=weight===0?30:(weight>25?120:90);
+   $("timerhint").textContent=weight===0?"0 kg · 30 sek vila":(weight>25?"Över 25 kg · 120 sek vila":"1–25 kg · 90 sek vila");
+   $("rests").querySelectorAll("button").forEach(x=>x.classList.toggle("active",Number(x.dataset.s)===seconds));
+   startRest(seconds);
   }
  }));
  $("exerciseList").querySelectorAll("[data-w]").forEach(e=>e.addEventListener("change",()=>{
@@ -270,20 +273,12 @@ $("rests").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>
  rest=Number(b.dataset.s);left=rest;stop();clock();
  $("rests").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===b));
  $("timerstatus").textContent="VILOTID ÄNDRAD";
+ $("timerhint").textContent="Manuellt vald vilotid";
 }));
 $("start").addEventListener("click",()=>{
- if(tick){stop();$("timerstatus").textContent="PAUSAD";return}
+ if(tick){stop();$("timerstatus").textContent="PAUSAD";return;}
  if(left<=0)left=rest;
- $("start").textContent="PAUSA";$("timerstatus").textContent="VILAR";
- tick=setInterval(()=>{
-  left--;clock();
-  if(left<=0){
-   stop();left=0;clock();
-   $("timerstatus").textContent="VILAN KLAR · NÄSTA SET";
-   $("start").textContent="STARTA IGEN";
-   if(navigator.vibrate)navigator.vibrate([200,100,200]);
-  }
- },1000);
+ runTimer();$("timerstatus").textContent="VILAR";
 });
 $("reset").addEventListener("click",()=>{
  stop();left=rest;clock();$("timerstatus").textContent="NOLLSTÄLLD";
@@ -301,6 +296,6 @@ renderHome();clock();
 if("serviceWorker" in navigator && location.protocol.startsWith("http")){
  navigator.serviceWorker.register("./sw.js").catch(()=>{});
 }
- </script>
+</script>
 </body>
 </html>
