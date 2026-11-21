@@ -137,6 +137,39 @@ const plans=[
  {title:"LEGS & CHEST",items:[["Stiff Legged Deadlift",5],["Calf Press on Leg Press",4],["Incline Bench Press",4],["DB Bench Press",4],["Mid Cable Crossover Fly",4]]},
  {title:"SHOULDERS, BACK & CORE",items:[["Cable Face Pull",4],["DB Shoulder Press",4],["Cable Lateral Raise",3],["Cable Reverse Fly",3],["Barbell Row Reverse Grip",3],["Cable Row Overhand Grip",3],["Reverse Grip Pulldown",4],["Barbell Glute Bridge",3],["Reverse Crunch",3],["Rope Crunch",4],["Russian Twist",3]]}
 ];
+const exerciseImages = {
+ "DB Bicep Curl":"db-bicep-curl.webp",
+ "Close Grip Bench Press":"close-grip-bench-press.webp",
+ "EZ Bar Curl":"ez-bar-curl.webp",
+ "EZ Bar Skullcrusher":"ez-bar-skullcrusher.webp",
+ "Back Squat":"back-squat.webp",
+ "DB Bulgarian Split Squat":"bulgarian-split-squat.webp",
+ "Leg Extension":"leg-extension.webp",
+ "Machine Adduction":"machine-adduction.webp",
+ "Back Extension":"back-extension.webp",
+ "Superman":"superman.webp",
+ "Machine Back Extension":"machine-back-extension.webp",
+ "DB Row":"db-row.webp",
+ "Lat Pulldown Neutral Grip":"lat-pulldown-neutral-grip.webp",
+ "Row":"row.webp",
+ "Plank":"plank.webp",
+ "Russian Twist":"russian-twist.webp",
+ "Reverse Crunch":"reverse-crunch.webp",
+ "Stiff Legged Deadlift":"stiff-legged-deadlift.webp",
+ "Calf Press on Leg Press":"calf-press-leg-press.webp",
+ "Incline Bench Press":"incline-bench-press.webp",
+ "DB Bench Press":"db-bench-press.webp",
+ "Mid Cable Crossover Fly":"mid-cable-crossover-fly.webp",
+ "Cable Face Pull":"cable-face-pull.webp",
+ "DB Shoulder Press":"db-shoulder-press.webp",
+ "Cable Lateral Raise":"cable-lateral-raise.webp",
+ "Cable Reverse Fly":"cable-reverse-fly.webp",
+ "Barbell Row Reverse Grip":"barbell-row-reverse-grip.webp",
+ "Cable Row Overhand Grip":"cable-row-overhand-grip.webp",
+ "Reverse Grip Pulldown":"reverse-grip-pulldown.webp",
+ "Barbell Glute Bridge":"barbell-glute-bridge.webp",
+ "Rope Crunch":"rope-crunch.webp"
+};
 const key="omega-tracker-v1";
 const freshState=()=>({
  done:plans.map(p=>p.items.map(x=>Array(x[1]).fill(false))),
