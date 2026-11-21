@@ -296,6 +296,13 @@ function renderWorkout(){
  $("exerciseList").innerHTML=p.items.map((x,i)=>`
   <article class="exercise" data-exercise="${i}">
    <div class="row"><span class="exercise-name">${i+1}. ${x[0]}</span><span class="muted">${x[1]} SET</span></div>
+   ${exerciseImages[x[0]] ? `
+<img class="exercise-photo"
+src="images/${exerciseImages[x[0]]}"
+alt="${x[0]}"
+loading="lazy"
+onerror="this.style.display='none'">
+` : ""}
    <div class="sets">
     ${d[i].map((v,j)=>`<button class="set ${v?'done':''}" data-i="${i}" data-j="${j}">${v?'✓':j+1}</button>`).join("")}
     <span class="muted" style="align-self:center;margin-left:auto">${d[i].filter(Boolean).length}/${x[1]}</span>
