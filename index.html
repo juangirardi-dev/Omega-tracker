@@ -77,7 +77,9 @@ $("exerciseList").querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>{
   render();
   if(!wasDone){
     const weight=Number(state.records[day][i].weight||0);
-    startRest(weight===0?30:(weight>25?120:90));
+
+startRest(weight===0?30:(weight>25?120:90));
+
   }
 });
 
