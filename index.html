@@ -41,13 +41,47 @@ let day=0,rest=90,left=90,tick=null;
 const $=id=>document.getElementById(id),save=()=>localStorage.setItem(key,JSON.stringify(state)),total=p=>p.items.reduce((a,x)=>a+x[1],0);
 function clock(){ $("clock").textContent=String(Math.floor(left/60)).padStart(2,"0")+":"+String(left%60).padStart(2,"0")}
 function stop(){clearInterval(tick);tick=null;$("start").textContent="STARTA VILA"}
+
+function startRest(seconds){
+  stop();
+  rest=seconds;
+  left=seconds;
+  clock();
+  $("timerstatus").textContent="AUTOMATISK VILA";
+  $("start").textContent="PAUSA";
+  tick=setInterval(()=>{
+    left--;
+    clock();
+    if(left<=0){
+      stop();
+      left=0;
+      clock();
+      $("timerstatus").textContent="VILAN KLAR · NÄSTA SET";
+      $("start").textContent="STARTA IGEN";
+      if(navigator.vibrate)navigator.vibrate([200,100,200]);
+    }
+  },1000);
+}
+
 function render(){
 $("days").innerHTML=plans.map((p,i)=>`<button data-day="${i}" class="${day===i?'active':''}">DAG ${i+1}</button>`).join("");
 $("days").querySelectorAll("button").forEach(b=>b.onclick=()=>{day=+b.dataset.day;stop();left=rest;clock();render()});
 let p=plans[day],d=state.done[day],done=d.flat().filter(Boolean).length,t=total(p),ex=d.filter(a=>a.every(Boolean)).length;
 $("focus").textContent=p.title;$("daylabel").textContent="Dag "+(day+1);$("pct").textContent=Math.round(done/t*100)+"%";$("bar").style.width=done/t*100+"%";$("count").textContent=ex+" av "+p.items.length+" övningar klara";$("setsDone").textContent=done;$("setsTotal").textContent=t;$("exDone").textContent=ex;
-$("exerciseList").innerHTML=p.items.map((x,i)=>`<article class="exercise"><div class="row"><span class="exercise-name">${i+1}. ${x[0]}</span><span class="muted">${x[1]} SET</span></div><div class="sets">${d[i].map((v,j)=>`<button class="set ${v?'done':''}" data-i="${i}" data-j="${j}">${v?'✓':j+1}</button>`).join("")}<span class="muted" style="align-self:center;margin-left:auto">${d[i].filter(Boolean).length}/${x[1]}</span></div><div class="fields"><label>VIKT (KG)<input type="number" min="0" step=".5" placeholder="kg" data-w="${i}" value="${state.records[day][i].weight}"></label><label>REPS<input type="number" min="0" step="1" placeholder="reps" data-r="${i}" value="${state.records[day][i].reps}"></label></div></article>`).join("");
-$("exerciseList").querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>{let i=+b.dataset.i,j=+b.dataset.j;state.done[day][i][j]=!state.done[day][i][j];save();render()});
+$("exerciseList").innerHTML=p.items.map((x,i)=>`<article class="exercise"><div class="row"><span class="exercise-name">${i+1}. ${x[0]}</span><span class="muted">${x[1]} SET</span></div><div class="sets">${d[i].map((v,j)=>`<button class="set ${v?'done':''}" data-i="${i}" data-j="${j}">${v?'✓':j+1}</button>`).join("")}<span class="muted" style="align-self:center;margin-left:auto">${d[i].filter(Boolean).length}/${x[1]}</span></div><div class="fields"><label>VIKT (KG)<input type="number" min="0" step=".5" placeholder="kg" data-w="${i}" value="${state.records[day][i].weight}"></label><label>REPS<input type="number" min="0" step="1" placeholder="reps" data-r="${i}" value="${state.records[day][i].reps}"></label></div></article>`).
+$("exerciseList").querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>{
+  let i=+b.dataset.i,j=+b.dataset.j;
+  const wasDone=state.done[day][i][j];
+  state.done[day][i][j]=!wasDone;
+  save();
+  render();
+  if(!wasDone){
+    const weight=Number(state.records[day][i].weight||0);
+    startRest(weight===0?30:(weight>25?120:90));
+  }
+});
+
+
 $("exerciseList").querySelectorAll("[data-w]").forEach(e=>e.onchange=()=>{state.records[day][+e.dataset.w].weight=e.value;save()});
 $("exerciseList").querySelectorAll("[data-r]").forEach(e=>e.onchange=()=>{state.records[day][+e.dataset.r].reps=e.value;save()});
 }
