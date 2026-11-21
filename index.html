@@ -158,3 +158,147 @@ const exerciseArt={
  "Barbell Glute Bridge":"images/barbell-glute-bridge.webp",
  "Rope Crunch":"images/rope-crunch.webp"
 };
+
+ 
+const freshState=()=>({
+ done:plans.map(p=>p.items.map(x=>Array(x[1]).fill(false))),
+ records:plans.map(p=>p.items.map(()=>({weight:"",reps:""}))),
+ history:[]
+});
+let state;
+try{
+ state=JSON.parse(localStorage.getItem(key))||freshState();
+ if(!Array.isArray(state.done)||state.done.length!==plans.length)state=freshState();
+}catch(e){state=freshState()}
+let day=0,rest=90,left=90,tick=null;
+const $=id=>document.getElementById(id);
+const save=()=>localStorage.setItem(key,JSON.stringify(state));
+const total=p=>p.items.reduce((a,x)=>a+x[1],0);
+
+function clock(){
+ $("clock").textContent=String(Math.floor(left/60)).padStart(2,"0")+":"+String(left%60).padStart(2,"0");
+}
+function stop(){
+ clearInterval(tick);tick=null;
+ $("start").textContent="STARTA VILA";
+}
+function startRest(seconds){
+ stop();rest=seconds;left=seconds;clock();
+ $("timerstatus").textContent="AUTOMATISK VILA";
+ $("start").textContent="PAUSA";
+ tick=setInterval(()=>{
+  left--;clock();
+  if(left<=0){
+   stop();left=0;clock();
+   $("timerstatus").textContent="VILAN KLAR · NÄSTA SET";
+   $("start").textContent="STARTA IGEN";
+   if(navigator.vibrate)navigator.vibrate([200,100,200]);
+  }
+ },1000);
+}
+function openWorkout(index){
+ day=index;stop();left=rest;clock();renderWorkout();
+ $("homePage").hidden=true;
+ $("workoutPage").hidden=false;
+ window.scrollTo(0,0);
+}
+function goHome(){
+ stop();
+ $("workoutPage").hidden=true;
+ $("homePage").hidden=false;
+ renderHome();
+ window.scrollTo(0,0);
+}
+function renderHome(){
+ $("days").innerHTML=plans.map((p,i)=>{
+  const completed=state.done[i].flat().filter(Boolean).length;
+  const all=total(p);
+  return `<button data-day="${i}">${p.title}<span>${completed}/${all} set klara · ÖPPNA PASS →</span></button>`;
+ }).join("");
+ $("days").querySelectorAll("[data-day]").forEach(b=>b.addEventListener("click",()=>openWorkout(Number(b.dataset.day))));
+ const done=state.done.reduce((sum,d)=>sum+d.flat().filter(Boolean).length,0);
+ const all=plans.reduce((sum,p)=>sum+total(p),0);
+ $("weekDone").textContent=done+" / "+all;
+ $("weekBar").style.width=(done/all*100)+"%";
+ $("weekPct").textContent=Math.round(done/all*100)+"% av veckans set klara";
+}
+function renderWorkout(){
+ const p=plans[day],d=state.done[day];
+ const done=d.flat().filter(Boolean).length,t=total(p);
+ const ex=d.filter(a=>a.every(Boolean)).length;
+ $("focus").textContent=p.title;
+ $("daylabel").textContent="DAG "+(day+1)+" · ÖVNINGAR";
+ $("pct").textContent=Math.round(done/t*100)+"%";
+ $("bar").style.width=(done/t*100)+"%";
+ $("count").textContent=ex+" av "+p.items.length+" övningar klara";
+ $("setsDone").textContent=done;
+ $("setsTotal").textContent=t;
+ $("exDone").textContent=ex;
+ $("exerciseList").innerHTML=p.items.map((x,i)=>`
+  <article class="exercise">
+   <div class="row"><span class="exercise-name">${i+1}. ${x[0]}</span><span class="muted">${x[1]} SET</span></div>
+   ${exerciseArt[x[0]]?`<img class="exercise-visual" src="${exerciseArt[x[0]]}" alt="3D-illustration av ${x[0]}" loading="lazy">`:`<div class="visual-pending">3D-ILLUSTRATION PÅ VÄG</div>`}
+   <div class="sets">
+    ${d[i].map((v,j)=>`<button class="set ${v?'done':''}" data-i="${i}" data-j="${j}">${v?'✓':j+1}</button>`).join("")}
+    <span class="muted" style="align-self:center;margin-left:auto">${d[i].filter(Boolean).length}/${x[1]}</span>
+   </div>
+   <div class="fields">
+    <label>VIKT (KG)<input type="number" min="0" step=".5" placeholder="kg" data-w="${i}" value="${state.records[day][i].weight}"></label>
+    <label>REPS<input type="number" min="0" step="1" placeholder="reps" data-r="${i}" value="${state.records[day][i].reps}"></label>
+   </div>
+  </article>`).join("");
+
+ $("exerciseList").querySelectorAll("[data-i]").forEach(b=>b.addEventListener("click",()=>{
+  const i=Number(b.dataset.i),j=Number(b.dataset.j);
+  const wasDone=state.done[day][i][j];
+  state.done[day][i][j]=!wasDone;
+  save();renderWorkout();renderHome();
+  if(!wasDone){
+   const weight=Number(state.records[day][i].weight||0);
+   startRest(weight===0?30:(weight>25?120:90));
+  }
+ }));
+ $("exerciseList").querySelectorAll("[data-w]").forEach(e=>e.addEventListener("change",()=>{
+  state.records[day][Number(e.dataset.w)].weight=e.value;save();
+ }));
+ $("exerciseList").querySelectorAll("[data-r]").forEach(e=>e.addEventListener("change",()=>{
+  state.records[day][Number(e.dataset.r)].reps=e.value;save();
+ }));
+}
+$("backHome").addEventListener("click",goHome);
+$("rests").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{
+ rest=Number(b.dataset.s);left=rest;stop();clock();
+ $("rests").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===b));
+ $("timerstatus").textContent="VILOTID ÄNDRAD";
+}));
+$("start").addEventListener("click",()=>{
+ if(tick){stop();$("timerstatus").textContent="PAUSAD";return}
+ if(left<=0)left=rest;
+ $("start").textContent="PAUSA";$("timerstatus").textContent="VILAR";
+ tick=setInterval(()=>{
+  left--;clock();
+  if(left<=0){
+   stop();left=0;clock();
+   $("timerstatus").textContent="VILAN KLAR · NÄSTA SET";
+   $("start").textContent="STARTA IGEN";
+   if(navigator.vibrate)navigator.vibrate([200,100,200]);
+  }
+ },1000);
+});
+$("reset").addEventListener("click",()=>{
+ stop();left=rest;clock();$("timerstatus").textContent="NOLLSTÄLLD";
+});
+$("finish").addEventListener("click",()=>{
+ const done=state.done[day].flat().filter(Boolean).length,t=total(plans[day]);
+ if(done===t){
+  state.history.push({day:day+1,date:new Date().toISOString(),sets:done});
+  save();$("message").textContent="Bra jobbat! Alla set i passet är avklarade.";
+ }else{
+  $("message").textContent=done+" av "+t+" set klara. Fortsätt när du är redo.";
+ }
+});
+renderHome();clock();
+if("serviceWorker" in navigator && location.protocol.startsWith("http")){
+ navigator.serviceWorker.register("./sw.js").catch(()=>{});
+}
+ 
