@@ -788,7 +788,13 @@ window.addEventListener("focus",()=>{
   <button data-panel="omegaRecords">PERSONLIGA REKORD</button>
   <button data-panel="omegaProgress">UTVECKLING</button>
   <button data-panel="omegaBackup">BACKUP</button></div>
-  <section class="hubpanel" id="omegaHistory" hidden><h2>Träningshistorik</h2><div id="historyList"></div></section>
+ <section class="hubpanel" id="omegaHistory" hidden>
+  <h2>Träningshistorik</h2>
+  <div id="historyList"></div>
+  <button id="clearTrainingData" style="width:100%;margin-top:12px;background:#9B2630">
+    RADERA HISTORIK OCH PERSONLIGA REKORD
+  </button>
+</section>
   <section class="hubpanel" id="omegaRecords" hidden><h2>Personliga rekord</h2><div id="recordsList"></div></section>
   <section class="hubpanel" id="omegaProgress" hidden><h2>Utveckling över tid</h2>
   <label class="muted" for="progressExercise">Välj övning</label><select id="progressExercise"></select>
