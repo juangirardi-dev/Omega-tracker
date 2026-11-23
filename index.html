@@ -262,38 +262,32 @@ const exerciseImages = {
   "Leaning Lateral Raise": "leaning-lateral-raise.webp",
   "Barbell Curl": "barbell-curl.webp",
   "Cable Single Arm Underhand Tricep Extension": "cable-single-arm-underhand-tricep-extension.webp",
-
   "EZ Bar Skullcrusher": "ez-bar-skullcrusher.webp",
   "Back Squat": "back-squat.webp",
   "Leg Extension": "leg-extension.webp",
   "Machine Adduction": "machine-adduction.webp",
   "Calf Press on Leg Press": "calf-press-leg-press.webp",
-
   "Barbell Row Reverse Grip": "barbell-row-reverse-grip.webp",
   "Cable Face Pull": "cable-face-pull.webp",
   "Barbell Romanian Deadlift": "barbell-romanian-deadlift.webp",
   "Smith Machine Squat": "smith-machine-squat.webp",
-
   "Cycling – Stationary": "cycling-stationary.webp",
   "Hack Squat": "hack-squat.webp",
   "Leg Press": "leg-press.webp",
   "Lying Hamstring Curl": "lying-hamstring-curl.webp",
   "Dumbbell Walking Lunge": "dumbbell-walking-lunge.webp",
-
   "Deadlift": "deadlift.webp",
   "Seated Leg Curl": "seated-leg-curl.webp",
   "Dumbbell Bulgarian Split Squat": "dumbbell-bulgarian-split-squat.webp",
   "Barbell Hip Thrust": "barbell-hip-thrust.webp",
   "Machine Abduction": "machine-abduction.webp",
   "Plate-Loaded Standing Calf Raise": "plate-loaded-standing-calf-raise.webp",
-
   "Pull Up": "pull-up.webp",
   "Barbell Shoulder Press": "barbell-shoulder-press.webp",
   "Dumbbell Row": "dumbbell-row.webp",
   "Cable Crossover Fly": "cable-crossover-fly.webp",
   "Machine Reverse Fly": "machine-reverse-fly.webp",
   "Seated Dumbbell Curl": "seated-dumbbell-curl.webp",
-
   "Barbell Incline Bench Press": "incline-bench-press.webp",
   "Lat Pulldown Neutral Grip": "lat-pulldown-neutral-grip.webp",
   "Dumbbell Bench Press": "db-bench-press.webp",
@@ -301,9 +295,7 @@ const exerciseImages = {
   "Dumbbell Lateral Raise Seated": "dumbbell-lateral-raise-seated.webp",
   "Incline Dumbbell Curl": "incline-dumbbell-curl.webp",
   "Cable Rope Tricep Extension": "cable-rope-tricep-extension.webp",
-
   "Dumbbell Split Squat": "dumbbell-split-squat.webp",
-
   "Dumbbell Shoulder Press": "db-shoulder-press.webp",
   "Low Cable Chest Fly": "low-cable-chest-fly.webp",
   "Single Arm Preacher Curl": "single-arm-preacher-curl.webp"
@@ -322,6 +314,8 @@ try{
 
 let phase=0,week=1,day=0,activeExercise=0;
 let rest=90,left=90,tick=null,audioCtx=null;
+let restDeadline=0;
+let pendingBell=false;
 
 const $=id=>document.getElementById(id);
 const save=()=>localStorage.setItem(storageKey,JSON.stringify(data));
@@ -367,23 +361,35 @@ function clock(){
 function stop(){
  clearInterval(tick);
  tick=null;
+ restDeadline=0;
  if($("start"))$("start").textContent="STARTA VILA";
 }
 
-function unlockBell(){
+async function unlockBell(){
  try{
   const C=window.AudioContext||window.webkitAudioContext;
-  if(!C)return;
+  if(!C)return false;
+
   if(!audioCtx)audioCtx=new C();
-  if(audioCtx.state==="suspended")audioCtx.resume();
- }catch(e){}
+
+  if(audioCtx.state!=="running"){
+   await audioCtx.resume();
+  }
+
+  return audioCtx.state==="running";
+ }catch(e){
+  return false;
+ }
 }
 
-function playBell(){
+function scheduleBell(){
+ if(!audioCtx||audioCtx.state!=="running"){
+  pendingBell=true;
+  return false;
+ }
+
  try{
-  if(!audioCtx)return;
-  if(audioCtx.state==="suspended")audioCtx.resume();
-  const now=audioCtx.currentTime;
+  const now=audioCtx.currentTime+.05;
 
   [0,.32].forEach(delay=>
    [880,1320,1760].forEach((f,n)=>{
@@ -404,33 +410,67 @@ function playBell(){
     o.stop(t+1.08);
    })
   );
- }catch(e){}
+
+  pendingBell=false;
+  return true;
+ }catch(e){
+  pendingBell=true;
+  return false;
+ }
+}
+
+async function playBell(){
+ const ready=await unlockBell();
+
+ if(!ready){
+  pendingBell=true;
+  return false;
+ }
+
+ return scheduleBell();
 }
 
 function finishRest(){
+ if(!tick)return;
+
  stop();
  left=0;
  clock();
+
  $("timerstatus").textContent="VILAN KLAR · NÄSTA SET";
  $("start").textContent="STARTA IGEN";
+
  playBell();
- if(navigator.vibrate)navigator.vibrate([250,120,250,120,400]);
+
+ if(navigator.vibrate){
+  navigator.vibrate([250,120,250,120,400]);
+ }
+}
+
+function updateTimer(){
+ if(!tick||!restDeadline)return;
+
+ left=Math.max(0,Math.ceil((restDeadline-Date.now())/1000));
+ clock();
+
+ if(left<=0)finishRest();
 }
 
 function runTimer(){
  stop();
+
+ restDeadline=Date.now()+left*1000;
  $("start").textContent="PAUSA";
- tick=setInterval(()=>{
-  left--;
-  clock();
-  if(left<=0)finishRest();
- },1000);
+
+ tick=setInterval(updateTimer,250);
+ updateTimer();
 }
 
 function startRest(s){
  rest=s;
  left=s;
  clock();
+
  $("timerstatus").textContent="AUTOMATISK VILA";
  runTimer();
 }
@@ -500,8 +540,6 @@ function renderWorkout(){
  const list=$("exerciseList");
  const dock=$("timerDock");
 
- // Flytta tillbaka timern innan listan ritas om.
- // Annars kan innerHTML ta bort timerDock ur dokumentet.
  if(dock && dock.parentElement===list){
   $("workoutPage").insertBefore(dock,list.nextSibling);
  }
@@ -586,8 +624,6 @@ function renderWorkout(){
  });
 }
 
-// En enda klickhantering för veckorna.
-// Lyssnaren ligger kvar även när knapparna ritas om.
 $("weekButtons").addEventListener("click",e=>{
  const button=e.target.closest("button[data-week]");
  if(!button)return;
@@ -599,7 +635,6 @@ $("weekButtons").addEventListener("click",e=>{
  renderHome();
 });
 
-// En enda klickhantering för träningspassen.
 $("days").addEventListener("click",e=>{
  const button=e.target.closest("button[data-day]");
  if(!button)return;
@@ -607,7 +642,6 @@ $("days").addEventListener("click",e=>{
  openWorkout(Number(button.dataset.day));
 });
 
-// En enda klickhantering för alla set-knappar.
 $("exerciseList").addEventListener("click",e=>{
  const button=e.target.closest("button[data-i][data-j]");
  if(!button)return;
@@ -659,11 +693,14 @@ $("rests").querySelectorAll("button").forEach(b=>{
 });
 
 $("start").onclick=()=>{
+ unlockBell();
+
  if(tick){
   stop();
   $("timerstatus").textContent="PAUSAD";
   return;
  }
+
  if(left<=0)left=rest;
  runTimer();
  $("timerstatus").textContent="VILAR";
@@ -696,6 +733,31 @@ $("finish").onclick=()=>{
   $("message").textContent=n+" av "+t+" set klara. Fortsätt när du är redo.";
  }
 };
+
+async function restoreAudio(){
+ const ready=await unlockBell();
+
+ if(ready&&pendingBell){
+  scheduleBell();
+ }
+}
+
+document.addEventListener("visibilitychange",()=>{
+ if(!document.hidden){
+  updateTimer();
+  restoreAudio();
+ }
+});
+
+window.addEventListener("pageshow",()=>{
+ updateTimer();
+ restoreAudio();
+});
+
+window.addEventListener("focus",()=>{
+ updateTimer();
+ restoreAudio();
+});
 
 renderHome();
 clock();
