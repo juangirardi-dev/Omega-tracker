@@ -759,6 +759,128 @@ window.addEventListener("focus",()=>{
  restoreAudio();
 });
 
+/* OMEGA TRACKER DATA HUB – klistra in före renderHome(); */
+(function(){
+  if(!Array.isArray(data.workouts)) data.workouts=[];
+  if(!Array.isArray(data.history)) data.history=[];
+  data.history.forEach((h,i)=>{
+    const id0=`legacy-${h.phase}-${h.week}-${h.day}-${h.date||i}`;
+    if(!data.workouts.some(w=>w.id===id0)) data.workouts.push({
+      id:id0,date:h.date||new Date().toISOString(),phase:h.phase,week:h.week,
+      day:h.day,title:`Pass ${h.day}`,completedSets:h.sets||0,totalSets:h.sets||0,
+      complete:true,exercises:[],legacy:true
+    });
+  });
+  const css=document.createElement("style");
+  css.textContent=`#omegaHub .hubgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  #omegaHub .hubpanel{margin-top:12px}#omegaHub .historyitem,#omegaHub .recordrow{
+  background:#111318;border:1px solid var(--line);border-radius:11px;padding:12px;margin:8px 0;font-size:13px}
+  #omegaHub .historyitem p{color:var(--muted);font-size:12px;margin:6px 0}
+  #omegaHub .recordrow{display:flex;justify-content:space-between;gap:8px}
+  #omegaHub .chartbox{background:#111318;border:1px solid var(--line);border-radius:12px;padding:8px}
+  #omegaHub svg{width:100%;height:auto;display:block}#omegaHub input[type=file]{width:100%;font-size:13px!important}`;
+  document.head.appendChild(css);
+  const hub=document.createElement("section");
+  hub.id="omegaHub";hub.className="card";
+  hub.innerHTML=`<h2>TRÄNINGSDATA</h2><p class="muted">Historik, rekord, utveckling och backup.</p>
+  <div class="hubgrid">
+  <button data-panel="omegaHistory">TRÄNINGSHISTORIK</button>
+  <button data-panel="omegaRecords">PERSONLIGA REKORD</button>
+  <button data-panel="omegaProgress">UTVECKLING</button>
+  <button data-panel="omegaBackup">BACKUP</button></div>
+  <section class="hubpanel" id="omegaHistory" hidden><h2>Träningshistorik</h2><div id="historyList"></div></section>
+  <section class="hubpanel" id="omegaRecords" hidden><h2>Personliga rekord</h2><div id="recordsList"></div></section>
+  <section class="hubpanel" id="omegaProgress" hidden><h2>Utveckling över tid</h2>
+  <label class="muted" for="progressExercise">Välj övning</label><select id="progressExercise"></select>
+  <div class="chartbox"><svg id="progressChart" viewBox="0 0 600 220"></svg></div><p class="muted" id="phaseComparison"></p></section>
+  <section class="hubpanel" id="omegaBackup" hidden><h2>Säkerhetskopia</h2>
+  <button id="exportBackup" class="lime" style="width:100%">EXPORTERA BACKUP</button>
+  <label class="muted">Återställ från JSON-fil<input type="file" id="importBackup" accept="application/json,.json"></label>
+  <p class="muted" id="backupMessage">Exportera en extra kopia av dina träningsdata.</p></section>`;
+  $("homePage").appendChild(hub);
+
+  function saveWorkoutRecord(){
+    const p=workout(), ex=p.items.map((x,i)=>{
+      const done=doneArray(day,i,x[1]), cardio=isCardio(x), raw=weightValue(day,i);
+      return {name:x[0],cardio,weight:cardio||raw===""?null:Number(raw),
+        reps:data.reps[id(phase,week,day,i)]||"",completedSets:done.filter(Boolean).length,totalSets:x[1]};
+    });
+    const completedSets=ex.reduce((s,e)=>s+e.completedSets,0), totalSets=ex.reduce((s,e)=>s+e.totalSets,0);
+    const rec={id:`p${phase+1}-w${week}-d${day+1}`,date:new Date().toISOString(),
+      phase:phase+1,week,day:day+1,title:p.title,completedSets,totalSets,
+      complete:completedSets===totalSets,exercises:ex};
+    const at=data.workouts.findIndex(w=>w.id===rec.id);
+    if(at<0)data.workouts.push(rec);else data.workouts[at]=rec;
+    save();
+  }
+  function renderHistory(){
+    const a=[...data.workouts].sort((x,y)=>new Date(y.date)-new Date(x.date));
+    $("historyList").innerHTML=a.length?a.map(w=>`<div class="historyitem">
+      <b>${w.title||"Träningspass"} · Fas ${w.phase} · Vecka ${w.week}</b>
+      <p>${new Date(w.date).toLocaleString("sv-SE")}</p>
+      <p>${w.completedSets}/${w.totalSets} set · ${w.complete?"HELT KLART":"DELVIS KLART"}</p>
+      ${(w.exercises||[]).map(e=>`<div>${e.name}: ${e.weight===null?"—":e.weight+" kg"} · ${e.completedSets}/${e.totalSets} set</div>`).join("")}
+      ${w.legacy?'<p>Äldre registrering: detaljer per övning saknas.</p>':""}</div>`).join(""):"Inga träningspass registrerade ännu.";
+  }
+  function renderRecords(){
+    const r={};data.workouts.forEach(w=>(w.exercises||[]).forEach(e=>{
+      if(e.cardio||!Number.isFinite(e.weight)||e.weight<=0||e.completedSets<1)return;
+      if(!r[e.name]||e.weight>r[e.name].weight)r[e.name]={weight:e.weight,date:w.date};
+    }));
+    const entries=Object.entries(r).sort((a,b)=>a[0].localeCompare(b[0],"sv"));
+    $("recordsList").innerHTML=entries.length?entries.map(([n,v])=>`<div class="recordrow"><span>${n}</span><b>${v.weight} kg</b></div>`).join(""):"Inga personliga rekord registrerade ännu.";
+  }
+  function drawProgress(){
+    const name=$("progressExercise").value,svg=$("progressChart");
+    if(!name){svg.innerHTML='<text x="300" y="112" fill="#A5A9B2" text-anchor="middle">Registrera vikter för att se utvecklingen</text>';$("phaseComparison").textContent="";return;}
+    const pts=[];data.workouts.forEach(w=>{const e=(w.exercises||[]).find(v=>v.name===name&&!v.cardio&&v.weight>0&&v.completedSets>0);if(e)pts.push({weight:e.weight,phase:w.phase,date:w.date});});
+    pts.sort((a,b)=>new Date(a.date)-new Date(b.date));
+    if(!pts.length){svg.innerHTML="";return;}
+    const vals=pts.map(p=>p.weight),lo=Math.min(...vals),hi=Math.max(...vals),range=hi-lo||2;
+    const c=pts.map((p,i)=>({x:pts.length===1?300:42+i*516/(pts.length-1),y:184-((p.weight-(lo-range*.2))/(range*1.4))*150,weight:p.weight,date:p.date}));
+    svg.innerHTML=`<line x1="35" y1="185" x2="565" y2="185" stroke="#555"/>
+      <polyline points="${c.map(p=>p.x+","+p.y).join(" ")}" fill="none" stroke="#E53945" stroke-width="4"/>
+      ${c.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="5" fill="#E53945"><title>${p.weight} kg · ${new Date(p.date).toLocaleDateString("sv-SE")}</title></circle>`).join("")}
+      <text x="42" y="210" fill="#A5A9B2" font-size="11">${new Date(pts[0].date).toLocaleDateString("sv-SE")}</text>
+      <text x="558" y="210" text-anchor="end" fill="#A5A9B2" font-size="11">${new Date(pts.at(-1).date).toLocaleDateString("sv-SE")}</text>`;
+    $("phaseComparison").textContent=[1,2,3].map(n=>{const v=pts.filter(p=>p.phase===n).map(p=>p.weight);return `Fas ${n}: ${v.length?Math.max(...v)+" kg":"—"}`;}).join(" · ");
+  }
+  function renderHub(){
+    renderHistory();renderRecords();
+    const names=[...new Set(data.workouts.flatMap(w=>(w.exercises||[]).filter(e=>!e.cardio&&e.weight>0&&e.completedSets>0).map(e=>e.name)))].sort();
+    const sel=$("progressExercise"),old=sel.value;
+    sel.innerHTML=names.map(n=>`<option value="${n}">${n}</option>`).join("");
+    if(names.includes(old))sel.value=old;drawProgress();
+  }
+  hub.addEventListener("click",e=>{
+    const b=e.target.closest("[data-panel]");if(!b)return;
+    const panel=$(b.dataset.panel);panel.hidden=!panel.hidden;if(!panel.hidden)renderHub();
+  });
+  $("progressExercise").addEventListener("change",drawProgress);
+  $("exerciseList").addEventListener("click",e=>{if(e.target.closest("button[data-i][data-j]"))setTimeout(saveWorkoutRecord,0);});
+  $("exerciseList").addEventListener("change",e=>{if(e.target.matches("[data-w],[data-r]"))setTimeout(saveWorkoutRecord,0);});
+  $("finish").addEventListener("click",saveWorkoutRecord);
+  $("backHome").addEventListener("click",saveWorkoutRecord);
+  $("exportBackup").onclick=()=>{
+    const blob=new Blob([JSON.stringify({format:"OMEGA_TRACKER_BACKUP",version:1,data},null,2)],{type:"application/json"});
+    const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="omega-tracker-backup.json";
+    document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    $("backupMessage").textContent="Säkerhetskopian har exporterats.";
+  };
+  $("importBackup").onchange=e=>{
+    const f=e.target.files[0];if(!f)return;const reader=new FileReader();
+    reader.onload=()=>{try{
+      const parsed=JSON.parse(reader.result),incoming=parsed.data||parsed;
+      if(!incoming.weights||!incoming.reps||!incoming.done)throw Error("Ogiltig fil");
+      if(!confirm("Vill du återställa säkerhetskopian? Nuvarande data ersätts."))return;
+      data={...blank(),...incoming,history:Array.isArray(incoming.history)?incoming.history:[],workouts:Array.isArray(incoming.workouts)?incoming.workouts:[]};
+      save();renderHome();renderHub();$("backupMessage").textContent="Säkerhetskopian har återställts.";
+    }catch(err){$("backupMessage").textContent="Kunde inte läsa säkerhetskopian. Kontrollera JSON-filen.";}finally{e.target.value="";}};
+    reader.readAsText(f);
+  };
+  renderHub();
+})();
+ 
 renderHome();
 clock();
 
@@ -768,3 +890,6 @@ if("serviceWorker" in navigator&&location.protocol.startsWith("http")){
 </script>
 </body>
 </html>
+
+renderHome();
+clock();
