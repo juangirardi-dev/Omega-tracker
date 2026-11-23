@@ -583,7 +583,7 @@ function renderWorkout(){
     <span class="exercise-name">${i+1}. ${x[0]}</span>
     <span class="muted">${x[1]} ${cardio?"MÅL":"SET"}</span>
    </div>
-   ${img?`<img class="exercise-photo" src="images/${img}" alt="${x[0]}" loading="lazy" onerror="this.style.display='none'">`:""}
+   ${img?`<img class="exercise-photo" src="exercise-images/${img}" alt="${x[0]}" loading="lazy" onerror="this.style.display='none'">`:""}
    <div class="sets">
     ${a.map((v,j)=>`<button class="set ${v?"done":""}" data-i="${i}" data-j="${j}">${v?"✓":j+1}</button>`).join("")}
     <span class="muted" style="align-self:center;margin-left:auto">${a.filter(Boolean).length}/${x[1]}</span>
