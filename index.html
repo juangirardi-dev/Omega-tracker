@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="sv">
 <head>
@@ -25,9 +26,7 @@ h1 span{color:var(--accent)}
 .stat b{font-size:22px;display:block}
 .stat small,.muted{color:var(--muted);font-size:12px}
 .days{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-
 .days button,button{border:1px solid var(--line);background:#25282E;color:#fff;border-radius:11px;padding:13px 10px;font-weight:700;font-size:13px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-
 .days button{min-height:62px;text-align:left}
 .days button span{display:block;color:var(--muted);font-size:11px;margin-top:5px;font-weight:500}
 button.active,.lime{background:#E53945!important;color:#FFFFFF!important;border-color:#E53945!important}
@@ -257,73 +256,42 @@ phasePlans[2]=JSON.parse(JSON.stringify(phasePlans[0]));
 
 const exerciseImages = {
   // UPPER A – FAS 1
-  "Barbell Bench Press":
-    "barbell-bench-press.webp",
-
-  "V Bar Pulldown":
-    "v-bar-pulldown.webp",
-
-  "Smith Machine Incline Bench Press":
-    "smith-machine-incline-bench-press.webp",
-
-  "Machine Row":
-    "machine-row.webp",
-
-  "Leaning Lateral Raise":
-    "leaning-lateral-raise.webp",
-
-  "Barbell Curl":
-    "barbell-curl.webp",
-
-  "Cable Single Arm Underhand Tricep Extension":
-    "cable-single-arm-underhand-tricep-extension.webp",
+  "Barbell Bench Press": "barbell-bench-press.webp",
+  "V Bar Pulldown": "v-bar-pulldown.webp",
+  "Smith Machine Incline Bench Press": "smith-machine-incline-bench-press.webp",
+  "Machine Row": "machine-row.webp",
+  "Leaning Lateral Raise": "leaning-lateral-raise.webp",
+  "Barbell Curl": "barbell-curl.webp",
+  "Cable Single Arm Underhand Tricep Extension": "cable-single-arm-underhand-tricep-extension.webp",
 
   // TIDIGARE BILDER – BEHÅLLS
-  "EZ Bar Skullcrusher":
-    "ez-bar-skullcrusher.webp",
-
-  "Back Squat":
-    "back-squat.webp",
-
-  "Leg Extension":
-    "leg-extension.webp",
-
-  "Machine Adduction":
-    "machine-adduction.webp",
-
-  "Calf Press on Leg Press":
-    "calf-press-leg-press.webp",
-
-  "Barbell Row Reverse Grip":
-    "barbell-row-reverse-grip.webp",
-
-  "Cable Face Pull":
-    "cable-face-pull.webp",
- 
-   // LEGS A – FAS 1
-  "Cycling – Stationary":
-    "cycling-stationary.webp",
-
-  "Hack Squat":
-    "hack-squat.webp",
-
-  "Leg Press":
-    "leg-press.webp",
-
-  "Lying Hamstring Curl":
-    "lying-hamstring-curl.webp",
-
-  "Dumbbell Walking Lunge":
-    "dumbbell-walking-lunge.webp",
-   // LEGS B – FAS 1
- "Deadlift": "deadlift.webp",
-"Barbell Romanian Deadlift": "barbell-romanian-deadlift.webp",
-  "Seated Leg Curl": "seated-leg-curl.webp",
-"Dumbbell Bulgarian Split Squat": "dumbbell-bulgarian-split-squat.webp",
-  "Barbell Hip Thrust": "barbell-hip-thrust.webp",
+  "EZ Bar Skullcrusher": "ez-bar-skullcrusher.webp",
+  "Back Squat": "back-squat.webp",
+  "Leg Extension": "leg-extension.webp",
   "Machine Adduction": "machine-adduction.webp",
+  "Calf Press on Leg Press": "calf-press-leg-press.webp",
+
+  // NYA BILDER – FAS 2
+  "Barbell Row Reverse Grip": "barbell-row-reverse-grip.webp",
+  "Cable Face Pull": "cable-face-pull.webp",
+  "Barbell Romanian Deadlift": "barbell-romanian-deadlift.webp",
+  "Smith Machine Squat": "smith-machine-squat.webp",
+
+  // LEGS A – FAS 1
+  "Cycling – Stationary": "cycling-stationary.webp",
+  "Hack Squat": "hack-squat.webp",
+  "Leg Press": "leg-press.webp",
+  "Lying Hamstring Curl": "lying-hamstring-curl.webp",
+  "Dumbbell Walking Lunge": "dumbbell-walking-lunge.webp",
+
+  // LEGS B – FAS 1
+  "Deadlift": "deadlift.webp",
+  "Seated Leg Curl": "seated-leg-curl.webp",
+  "Dumbbell Bulgarian Split Squat": "dumbbell-bulgarian-split-squat.webp",
+  "Barbell Hip Thrust": "barbell-hip-thrust.webp",
   "Machine Abduction": "machine-abduction.webp",
   "Plate-Loaded Standing Calf Raise": "plate-loaded-standing-calf-raise.webp",
+
   // UPPER B – FAS 1
   "Pull Up": "pull-up.webp",
   "Barbell Shoulder Press": "barbell-shoulder-press.webp",
@@ -331,7 +299,8 @@ const exerciseImages = {
   "Cable Crossover Fly": "cable-crossover-fly.webp",
   "Machine Reverse Fly": "machine-reverse-fly.webp",
   "Seated Dumbbell Curl": "seated-dumbbell-curl.webp",
-   // UPPER A – FAS 2
+
+  // UPPER A – FAS 2
   "Barbell Incline Bench Press": "incline-bench-press.webp",
   "Lat Pulldown Neutral Grip": "lat-pulldown-neutral-grip.webp",
   "Dumbbell Bench Press": "db-bench-press.webp",
@@ -339,12 +308,14 @@ const exerciseImages = {
   "Dumbbell Lateral Raise Seated": "dumbbell-lateral-raise-seated.webp",
   "Incline Dumbbell Curl": "incline-dumbbell-curl.webp",
   "Cable Rope Tricep Extension": "cable-rope-tricep-extension.webp",
+
   // LEGS A – FAS 2
   "Dumbbell Split Squat": "dumbbell-split-squat.webp",
-   // UPPER B – FAS 2
+
+  // UPPER B – FAS 2
   "Dumbbell Shoulder Press": "db-shoulder-press.webp",
   "Low Cable Chest Fly": "low-cable-chest-fly.webp",
-  "Single Arm Preacher Curl": "single-arm-preacher-curl.webp",
+  "Single Arm Preacher Curl": "single-arm-preacher-curl.webp"
 };
 
 const storageKey="omega-tracker-12week-v1";
