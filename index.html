@@ -255,7 +255,6 @@ const phasePlans = [
 phasePlans[2]=JSON.parse(JSON.stringify(phasePlans[0]));
 
 const exerciseImages = {
-  // UPPER A – FAS 1
   "Barbell Bench Press": "barbell-bench-press.webp",
   "V Bar Pulldown": "v-bar-pulldown.webp",
   "Smith Machine Incline Bench Press": "smith-machine-incline-bench-press.webp",
@@ -264,27 +263,23 @@ const exerciseImages = {
   "Barbell Curl": "barbell-curl.webp",
   "Cable Single Arm Underhand Tricep Extension": "cable-single-arm-underhand-tricep-extension.webp",
 
-  // TIDIGARE BILDER – BEHÅLLS
   "EZ Bar Skullcrusher": "ez-bar-skullcrusher.webp",
   "Back Squat": "back-squat.webp",
   "Leg Extension": "leg-extension.webp",
   "Machine Adduction": "machine-adduction.webp",
   "Calf Press on Leg Press": "calf-press-leg-press.webp",
 
-  // NYA BILDER – FAS 2
   "Barbell Row Reverse Grip": "barbell-row-reverse-grip.webp",
   "Cable Face Pull": "cable-face-pull.webp",
   "Barbell Romanian Deadlift": "barbell-romanian-deadlift.webp",
   "Smith Machine Squat": "smith-machine-squat.webp",
 
-  // LEGS A – FAS 1
   "Cycling – Stationary": "cycling-stationary.webp",
   "Hack Squat": "hack-squat.webp",
   "Leg Press": "leg-press.webp",
   "Lying Hamstring Curl": "lying-hamstring-curl.webp",
   "Dumbbell Walking Lunge": "dumbbell-walking-lunge.webp",
 
-  // LEGS B – FAS 1
   "Deadlift": "deadlift.webp",
   "Seated Leg Curl": "seated-leg-curl.webp",
   "Dumbbell Bulgarian Split Squat": "dumbbell-bulgarian-split-squat.webp",
@@ -292,7 +287,6 @@ const exerciseImages = {
   "Machine Abduction": "machine-abduction.webp",
   "Plate-Loaded Standing Calf Raise": "plate-loaded-standing-calf-raise.webp",
 
-  // UPPER B – FAS 1
   "Pull Up": "pull-up.webp",
   "Barbell Shoulder Press": "barbell-shoulder-press.webp",
   "Dumbbell Row": "dumbbell-row.webp",
@@ -300,7 +294,6 @@ const exerciseImages = {
   "Machine Reverse Fly": "machine-reverse-fly.webp",
   "Seated Dumbbell Curl": "seated-dumbbell-curl.webp",
 
-  // UPPER A – FAS 2
   "Barbell Incline Bench Press": "incline-bench-press.webp",
   "Lat Pulldown Neutral Grip": "lat-pulldown-neutral-grip.webp",
   "Dumbbell Bench Press": "db-bench-press.webp",
@@ -309,10 +302,8 @@ const exerciseImages = {
   "Incline Dumbbell Curl": "incline-dumbbell-curl.webp",
   "Cable Rope Tricep Extension": "cable-rope-tricep-extension.webp",
 
-  // LEGS A – FAS 2
   "Dumbbell Split Squat": "dumbbell-split-squat.webp",
 
-  // UPPER B – FAS 2
   "Dumbbell Shoulder Press": "db-shoulder-press.webp",
   "Low Cable Chest Fly": "low-cable-chest-fly.webp",
   "Single Arm Preacher Curl": "single-arm-preacher-curl.webp"
@@ -461,13 +452,6 @@ function renderHome(){
   VECKA ${w}<span>${w<=4?"FAS 1":w<=8?"FAS 2":"FAS 3"}</span></button>`;
  }).join("");
 
- $("weekButtons").querySelectorAll("[data-week]").forEach(b=>{
-  b.onclick=()=>{
-   week=Number(b.dataset.week);
-   renderHome();
-  };
- });
-
  $("days").innerHTML=phasePlans[phase].map((p,d)=>{
   let done=0,all=0;
   p.items.forEach((x,i)=>{
@@ -478,10 +462,6 @@ function renderHome(){
   return `<button data-day="${d}">${p.title}
   <span>${done}/${all} SET KLARA · ÖPPNA PASS →</span></button>`;
  }).join("");
-
- $("days").querySelectorAll("[data-day]").forEach(b=>{
-  b.onclick=()=>openWorkout(Number(b.dataset.day));
- });
 
  let done=0,all=0;
  phasePlans[phase].forEach((p,d)=>p.items.forEach((x,i)=>{
@@ -517,6 +497,15 @@ function goHome(){
 }
 
 function renderWorkout(){
+ const list=$("exerciseList");
+ const dock=$("timerDock");
+
+ // Flytta tillbaka timern innan listan ritas om.
+ // Annars kan innerHTML ta bort timerDock ur dokumentet.
+ if(dock && dock.parentElement===list){
+  $("workoutPage").insertBefore(dock,list.nextSibling);
+ }
+
  const p=workout();
  const allDone=p.items.reduce((n,x,i)=>
   n+doneArray(day,i,x[1]).filter(Boolean).length,0);
@@ -534,7 +523,7 @@ function renderWorkout(){
  $("setsTotal").textContent=all;
  $("exDone").textContent=finished;
 
- $("exerciseList").innerHTML=p.items.map((x,i)=>{
+ list.innerHTML=p.items.map((x,i)=>{
   const a=doneArray(day,i,x[1]);
   const w=weightValue(day,i);
   const rk=id(phase,week,day,i);
@@ -571,9 +560,8 @@ function renderWorkout(){
   </article>`;
  }).join("");
 
- const dock=$("timerDock");
- const card=$("exerciseList").querySelector(`[data-exercise="${activeExercise}"]`)||
-             $("exerciseList").querySelector(".exercise");
+ const card=list.querySelector(`[data-exercise="${activeExercise}"]`)||
+             list.querySelector(".exercise");
 
  if(card){
   card.classList.add("active-exercise");
@@ -583,50 +571,75 @@ function renderWorkout(){
   dock.hidden=true;
  }
 
- $("exerciseList").querySelectorAll("[data-i]").forEach(b=>{
-  b.onclick=()=>{
-   const i=+b.dataset.i;
-   const j=+b.dataset.j;
-   const a=doneArray(day,i,workout().items[i][1]);
-   const was=a[j];
-
-   if(!was)unlockBell();
-   a[j]=!was;
-   activeExercise=i;
-   save();
-   renderWorkout();
-   renderHome();
-
-   if(!was){
-    const wt=Number(weightValue(day,i)||0);
-    const s=wt===0?30:wt>25?120:90;
-
-    $("rests").querySelectorAll("button").forEach(x=>
-     x.classList.toggle("active",Number(x.dataset.s)===s)
-    );
-
-    $("timerhint").textContent=wt===0?"0 kg · 30 sek vila":
-      wt>25?"Över 25 kg · 120 sek vila":"1–25 kg · 90 sek vila";
-
-    startRest(s);
-   }
-  };
- });
-
- $("exerciseList").querySelectorAll("[data-w]").forEach(e=>{
+ list.querySelectorAll("[data-w]").forEach(e=>{
   e.onchange=()=>{
    data.weights[weightId(phase,workout().items[+e.dataset.w][0])]=e.value;
    save();
   };
  });
 
- $("exerciseList").querySelectorAll("[data-r]").forEach(e=>{
+ list.querySelectorAll("[data-r]").forEach(e=>{
   e.onchange=()=>{
    data.reps[id(phase,week,day,+e.dataset.r)]=e.value;
    save();
   };
  });
 }
+
+// En enda klickhantering för veckorna.
+// Lyssnaren ligger kvar även när knapparna ritas om.
+$("weekButtons").addEventListener("click",e=>{
+ const button=e.target.closest("button[data-week]");
+ if(!button)return;
+
+ const selectedWeek=Number(button.dataset.week);
+ if(selectedWeek===week)return;
+
+ week=selectedWeek;
+ renderHome();
+});
+
+// En enda klickhantering för träningspassen.
+$("days").addEventListener("click",e=>{
+ const button=e.target.closest("button[data-day]");
+ if(!button)return;
+
+ openWorkout(Number(button.dataset.day));
+});
+
+// En enda klickhantering för alla set-knappar.
+$("exerciseList").addEventListener("click",e=>{
+ const button=e.target.closest("button[data-i][data-j]");
+ if(!button)return;
+
+ const i=Number(button.dataset.i);
+ const j=Number(button.dataset.j);
+ const a=doneArray(day,i,workout().items[i][1]);
+ const was=a[j];
+
+ if(!was)unlockBell();
+
+ a[j]=!was;
+ activeExercise=i;
+ save();
+
+ renderWorkout();
+ renderHome();
+
+ if(!was){
+  const wt=Number(weightValue(day,i)||0);
+  const s=wt===0?30:wt>25?120:90;
+
+  $("rests").querySelectorAll("button").forEach(x=>
+   x.classList.toggle("active",Number(x.dataset.s)===s)
+  );
+
+  $("timerhint").textContent=wt===0?"0 kg · 30 sek vila":
+   wt>25?"Över 25 kg · 120 sek vila":"1–25 kg · 90 sek vila";
+
+  startRest(s);
+ }
+});
 
 $("phaseSelect").onchange=e=>phaseSet(e.target.value);
 $("backHome").onclick=goHome;
