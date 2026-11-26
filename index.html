@@ -1151,11 +1151,13 @@ clock();
       fat:0
     });
 
-    cal("calTotal").textContent = Math.round(totals.calories);
-    cal("proteinTotal").textContent = totals.protein + " g";
-    cal("carbTotal").textContent = totals.carbs + " g";
-    cal("fatTotal").textContent = "Fett: " +
-      totals.fat + " / 89 g";
+    
+cal("calTotal").textContent = Math.round(totals.calories);
+cal("proteinTotal").textContent = totals.protein.toLocaleString("sv-SE", {maximumFractionDigits:1}) + " g";
+cal("carbTotal").textContent = totals.carbs.toLocaleString("sv-SE", {maximumFractionDigits:1}) + " g";
+cal("fatTotal").textContent = "Fett: " +
+  totals.fat.toLocaleString("sv-SE", {maximumFractionDigits:1}) + " / 89 g";
+
 
     cal("calRemaining").textContent =
       Math.round(2294 - totals.calories) + " kvar";
