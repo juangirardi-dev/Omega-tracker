@@ -1362,7 +1362,34 @@ libraryButton.addEventListener("click", function () {
   } catch (error) {
     savedFoods = [];
   }
+// FÖR ÖVER GAMLA LIVSMEDEL TILL MY FOOD LIBRARY
+Object.values(calorieData).forEach(function(day) {
+  if (!day || !Array.isArray(day.foods)) return;
 
+  day.foods.forEach(function(food) {
+    const name = (food.name || "").trim();
+    if (!name) return;
+
+    const exists = savedFoods.some(function(item) {
+      return item.name.toLowerCase() === name.toLowerCase();
+    });
+
+    if (!exists) {
+      savedFoods.push({
+        name: name,
+        calories: Number(food.calories) || 0,
+        protein: Number(food.protein) || 0,
+        carbs: Number(food.carbs) || 0,
+        fat: Number(food.fat) || 0
+      });
+    }
+  });
+});
+
+localStorage.setItem(
+  libraryStorageKey,
+  JSON.stringify(savedFoods)
+);
   libraryList.innerHTML = "";
 
   if (savedFoods.length === 0) {
