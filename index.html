@@ -1265,7 +1265,42 @@ cal("fatTotal").textContent = "Fett: " +
         "Fyll i livsmedel och kalorier först.";
       return;
     }
+const libraryKey = "omega-food-library-v1";
+let foodLibrary = [];
 
+try {
+  foodLibrary = JSON.parse(
+    localStorage.getItem(libraryKey) || "[]"
+  );
+} catch (e) {
+  foodLibrary = [];
+}
+
+const existingFood = foodLibrary.find(
+  item => item.name.toLowerCase() === name.toLowerCase()
+);
+
+if (!existingFood) {
+  foodLibrary.push({
+    name,
+    calories,
+    protein,
+    carbs,
+    fat
+  });
+} else {
+  Object.assign(existingFood, {
+    calories,
+    protein,
+    carbs,
+    fat
+  });
+}
+
+localStorage.setItem(
+  libraryKey,
+  JSON.stringify(foodLibrary)
+);
     dayData().foods.push({
       name,
       calories,
