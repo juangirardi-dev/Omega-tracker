@@ -288,6 +288,73 @@ Du kan alltid ändra vikten själv.
 </section>
 </main>
 
+<main id="caloriesPage" hidden>
+  <button class="back" id="caloriesBack">← TILLBAKA TILL OMEGA TRACKER</button>
+
+  <section class="card">
+    <h2>Ω OMEGA CALORIES</h2>
+    <p class="muted">DAGLIG NUTRITION TRACKER</p>
+
+    <label class="muted">Välj datum</label>
+    <input type="date" id="calDate" style="width:100%">
+
+    <div class="stats" style="margin-top:18px">
+      <div class="stat"><b id="calTotal">0</b><small>KCAL</small></div>
+      <div class="stat"><b id="proteinTotal">0 g</b><small>PROTEIN</small></div>
+      <div class="stat"><b id="carbTotal">0 g</b><small>KOLHYDRATER</small></div>
+    </div>
+
+    <div class="row" style="margin-top:18px">
+      <span class="muted">Kalorimål: 2 294 kcal</span>
+      <b id="calRemaining">2 294 kvar</b>
+    </div>
+    <div class="track"><div class="fill" id="calBar"></div></div>
+    <p class="muted" id="fatTotal">Fett: 0 / 89 g</p>
+  </section>
+
+  <section class="card">
+    <h2>LÄGG TILL MÅLTID</h2>
+
+    <label class="muted">Mat / livsmedel</label>
+    <input id="foodName" type="text" placeholder="Ex. kyckling och ris" style="width:100%">
+
+    <div class="fields" style="margin-top:12px">
+      <label>Kalorier
+        <input id="foodCalories" type="number" min="0" placeholder="kcal">
+      </label>
+      <label>Protein (g)
+        <input id="foodProtein" type="number" min="0" step="0.1" placeholder="g">
+      </label>
+      <label>Kolhydrater (g)
+        <input id="foodCarbs" type="number" min="0" step="0.1" placeholder="g">
+      </label>
+      <label>Fett (g)
+        <input id="foodFat" type="number" min="0" step="0.1" placeholder="g">
+      </label>
+    </div>
+
+    <button class="lime" id="addFood" style="width:100%;margin-top:16px">
+      + LÄGG TILL MAT
+    </button>
+    <p class="muted" id="foodMessage"></p>
+  </section>
+
+  <section class="card">
+    <h2>DAGENS MÅLTIDER</h2>
+    <div id="foodList" class="muted">Inga måltider registrerade.</div>
+  </section>
+
+  <section class="card">
+    <h2>KROPPSVIKT</h2>
+    <p class="muted">Registrera din vikt för valt datum.</p>
+    <label class="muted">Vikt (kg)</label>
+    <input id="bodyWeight" type="number" min="0" step="0.1" placeholder="Ex. 82.5">
+    <button class="lime" id="saveBodyWeight" style="width:100%;margin-top:12px">
+      SPARA KROPPSVIKT
+    </button>
+    <p class="muted" id="weightMessage"></p>
+  </section>
+</main>
 <footer>OMEGA TRACKER · STAY CONSISTENT · GET STRONGER</footer>
 
 <script>
