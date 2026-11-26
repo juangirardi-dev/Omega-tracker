@@ -1095,6 +1095,162 @@ window.addEventListener("focus",()=>{
 
 renderHome();
 clock();
+/* OMEGA CALORIES – DATA OCH FUNKTIONER */
+
+(function(){
+
+  const calorieKey = "omega-calories-v1";
+
+  let calorieData = {};
+  try {
+    calorieData = JSON.parse(localStorage.getItem(calorieKey)) || {};
+  } catch(e) {
+    calorieData = {};
+  }
+
+  const cal = id => document.getElementById(id);
+
+  const today = new Date().toLocaleDateString("sv-SE");
+
+  cal("calDate").value = today;
+
+  function saveCalories(){
+    localStorage.setItem(calorieKey, JSON.stringify(calorieData));
+  }
+
+  function selectedDay(){
+    return cal("calDate").value || today;
+  }
+
+  function dayData(){
+    const date = selectedDay();
+
+    if(!calorieData[date]){
+      calorieData[date] = {
+        foods: [],
+        weight: ""
+      };
+    }
+
+    return calorieData[date];
+  }
+
+  function renderCalories(){
+
+    const day = dayData();
+
+    const totals = day.foods.reduce((s,f)=>{
+      s.calories += f.calories;
+      s.protein += f.protein;
+      s.carbs += f.carbs;
+      s.fat += f.fat;
+      return s;
+    }, {
+      calories:0,
+      protein:0,
+      carbs:0,
+      fat:0
+    });
+
+    cal("calTotal").textContent = Math.round(totals.calories);
+    cal("proteinTotal").textContent = totals.protein + " g";
+    cal("carbTotal").textContent = totals.carbs + " g";
+    cal("fatTotal").textContent = "Fett: " +
+      totals.fat + " / 89 g";
+
+    cal("calRemaining").textContent =
+      Math.round(2294 - totals.calories) + " kvar";
+
+    cal("calBar").style.width =
+      Math.min(100, totals.calories / 2294 * 100) + "%";
+
+    cal("foodList").innerHTML = day.foods.length
+      ? day.foods.map((f,i)=>`
+        <div class="exercise">
+          <div class="row">
+            <b>${f.name}</b>
+            <button data-delete-food="${i}">TA BORT</button>
+          </div>
+          <p class="muted">
+            ${f.calories} kcal · Protein ${f.protein} g ·
+            Kolhydrater ${f.carbs} g · Fett ${f.fat} g
+          </p>
+        </div>
+      `).join("")
+      : "Inga måltider registrerade.";
+
+    cal("bodyWeight").value = day.weight || "";
+  }
+
+  cal("openOmegaCalories").addEventListener("click",()=>{
+    cal("homePage").hidden = true;
+    cal("workoutPage").hidden = true;
+    cal("caloriesPage").hidden = false;
+    renderCalories();
+    window.scrollTo(0,0);
+  });
+
+  cal("caloriesBack").addEventListener("click",()=>{
+    cal("caloriesPage").hidden = true;
+    cal("homePage").hidden = false;
+    renderHome();
+    window.scrollTo(0,0);
+  });
+
+  cal("calDate").addEventListener("change",renderCalories);
+
+  cal("addFood").addEventListener("click",()=>{
+
+    const name = cal("foodName").value.trim();
+    const calories = Number(cal("foodCalories").value);
+    const protein = Number(cal("foodProtein").value);
+    const carbs = Number(cal("foodCarbs").value);
+    const fat = Number(cal("foodFat").value);
+
+    if(!name || !cal("foodCalories").value){
+      cal("foodMessage").textContent =
+        "Fyll i livsmedel och kalorier först.";
+      return;
+    }
+
+    dayData().foods.push({
+      name,
+      calories,
+      protein,
+      carbs,
+      fat
+    });
+
+    saveCalories();
+
+    cal("foodName").value = "";
+    cal("foodCalories").value = "";
+    cal("foodProtein").value = "";
+    cal("foodCarbs").value = "";
+    cal("foodFat").value = "";
+
+    cal("foodMessage").textContent = "Måltiden har sparats.";
+    renderCalories();
+  });
+
+  cal("foodList").addEventListener("click",e=>{
+    const button = e.target.closest("[data-delete-food]");
+    if(!button)return;
+
+    dayData().foods.splice(Number(button.dataset.deleteFood),1);
+    saveCalories();
+    renderCalories();
+  });
+
+  cal("saveBodyWeight").addEventListener("click",()=>{
+    dayData().weight = cal("bodyWeight").value;
+    saveCalories();
+
+    cal("weightMessage").textContent =
+      "Kroppsvikten har sparats.";
+  });
+
+})();
 
 if("serviceWorker" in navigator&&location.protocol.startsWith("http")){
  navigator.serviceWorker.register("./sw.js").catch(()=>{});
