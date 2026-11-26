@@ -1572,10 +1572,17 @@ localStorage.setItem(
 
   $s("stopFoodScanner").addEventListener("click",stopScanner);
 
-  $s("lookupFoodBarcode").addEventListener("click",()=>{
-    lookupBarcode($s("foodBarcode").value.trim());
-  });
+  $s("lookupFoodBarcode").onclick = function(){
+  const barcode = $s("foodBarcode").value.trim();
 
+  if(!barcode){
+    message("Skriv in en streckkod först.");
+    $s("foodBarcode").focus();
+    return;
+  }
+
+  lookupBarcode(barcode);
+};
   $s("saveScannedFood").addEventListener("click",()=>{
     if(!currentProduct){
       return message("Skanna eller sök efter en produkt först.");
