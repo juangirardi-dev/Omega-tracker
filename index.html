@@ -1513,49 +1513,55 @@ localStorage.setItem(
     }
   }
 
-  async function startScanner(){
-    try{
-      await loadScannerLibrary();
+  
+async function startScanner(){
+  try{
+    await loadScannerLibrary();
 
-      if(!scanner){
-        scanner = new Html5Qrcode("foodScannerCamera", {
-  formatsToSupport: [
-    Html5QrcodeSupportedFormats.EAN_13,
-    Html5QrcodeSupportedFormats.EAN_8,
-    Html5QrcodeSupportedFormats.UPC_A,
-    Html5QrcodeSupportedFormats.UPC_E,
-    Html5QrcodeSupportedFormats.CODE_128,
-    Html5QrcodeSupportedFormats.CODE_39
-  ]
-});
-      }
-
-      $s("foodScannerView").hidden = false;
-      message("Startar kameran...");
-
-      await scanner.start(
-        { facingMode: "environment" },
-       {
-  fps: 10,
-  qrbox: { width: 250, height: 
-},
-        code => {
-          if(scannerBusy) return;
-          scannerBusy = true;
-
-          lookupBarcode(code).finally(()=>{
-            stopScanner();
-            scannerBusy = false;
-          });
-        },
-        () => {}
-      );
-
-      message("Rikta kameran mot streckkoden.");
-    }catch(error){
-      message("Kameran kunde inte startas. Kontrollera kameratillståndet.");
+    if(!scanner){
+      scanner = new Html5Qrcode("foodScannerCamera", {
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39
+        ]
+      });
     }
+
+    $s("foodScannerView").hidden = false;
+    message("Startar kameran...");
+
+    await scanner.start(
+      { facingMode: "environment" },
+      {
+        fps: 10,
+        qrbox: { width: 250, height: 150 }
+      },
+      async (code) => {
+        if(scannerBusy) return;
+
+        scannerBusy = true;
+
+        try{
+          await lookupBarcode(code);
+        }finally{
+          await stopScanner();
+          scannerBusy = false;
+        }
+      },
+      () => {}
+    );
+
+    message("Rikta kameran mot streckkoden.");
+
+  }catch(error){
+    console.error(error);
+    message("Kameran kunde inte startas. Kontrollera kameratillståndet.");
   }
+}
 
   async function stopScanner(){
     if(scanner && scanner.isScanning){
