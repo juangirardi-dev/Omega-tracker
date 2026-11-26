@@ -338,6 +338,58 @@ Du kan alltid ändra vikten själv.
     <p class="muted" id="foodMessage"></p>
   </section>
 
+<section class="card" id="omegaFoodScanner">
+  <h2>Ω FOOD SCANNER</h2>
+  <p class="muted">SKANNA · SPARA · ÅTERANVÄND</p>
+
+  <button class="lime" id="startFoodScanner" style="width:100%">
+    📷 SKANNA STRECKKOD
+  </button>
+
+  <div id="foodScannerView" hidden style="margin-top:14px">
+    <div id="foodScannerCamera"></div>
+    <button id="stopFoodScanner" style="width:100%;margin-top:10px">
+      STÄNG KAMERAN
+    </button>
+  </div>
+
+  <label class="muted" style="display:block;margin-top:14px">
+    Eller skriv streckkoden
+  </label>
+  <input id="foodBarcode" type="text"
+    inputmode="numeric" placeholder="Streckkod"
+    style="width:100%">
+
+  <button id="lookupFoodBarcode" style="width:100%;margin-top:10px">
+    SÖK PRODUKT
+  </button>
+
+  <p class="muted" id="scannerMessage"></p>
+
+  <div id="scannerProduct" hidden>
+    <h2 id="scannerProductName"></h2>
+    <p class="muted" id="scannerNutrition"></p>
+
+    <label class="muted">Mängd i gram</label>
+    <input id="scannerGrams" type="number"
+      min="1" value="100" style="width:100%">
+
+    <button class="lime" id="saveScannedFood"
+      style="width:100%;margin-top:12px">
+      SPARA I FOOD LIBRARY
+    </button>
+  </div>
+</section>
+
+<section class="card" id="omegaFoodLibrary">
+  <h2>Ω MY FOOD LIBRARY</h2>
+  <p class="muted">DINA SPARADE LIVSMEDEL</p>
+  <div id="foodLibraryList" class="muted">
+    Inga produkter sparade ännu.
+  </div>
+</section>
+
+  
   <section class="card">
     <h2>DAGENS MÅLTIDER</h2>
     <div id="foodList" class="muted">Inga måltider registrerade.</div>
