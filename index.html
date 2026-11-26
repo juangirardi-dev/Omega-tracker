@@ -1426,6 +1426,194 @@ localStorage.setItem(
     libraryList.appendChild(item);
   });
 });
+
+// OMEGA FOOD SCANNER
+(function(){
+  const $s = id => document.getElementById(id);
+
+  let scanner = null;
+  let currentProduct = null;
+  let scannerBusy = false;
+
+  const message = text => {
+    if ($s("scannerMessage")) {
+      $s("scannerMessage").textContent = text;
+    }
+  };
+
+  function loadScannerLibrary(){
+    return new Promise((resolve,reject)=>{
+      if(window.Html5Qrcode) return resolve();
+
+      const script = document.createElement("script");
+      script.src = "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js";
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+
+  async function lookupBarcode(code){
+    if(!code) return message("Ange en streckkod.");
+
+    message("Söker efter produkten...");
+    currentProduct = null;
+
+    try{
+      const response = await fetch(
+        "https://world.openfoodfacts.org/api/v2/product/" +
+        encodeURIComponent(code) +
+        ".json?fields=product_name,brands,nutriments,code"
+      );
+
+      const result = await response.json();
+
+      if(result.status !== 1 || !result.product){
+        return message("Produkten hittades inte. Prova en annan streckkod.");
+      }
+
+      const p = result.product;
+      const n = p.nutriments || {};
+
+      let kcal = Number(n["energy-kcal_100g"]);
+      if(!Number.isFinite(kcal) || kcal <= 0){
+        const kj = Number(n["energy-kj_100g"]);
+        kcal = Number.isFinite(kj) ? kj / 4.184 : 0;
+      }
+
+      currentProduct = {
+        barcode: code,
+        name: p.product_name || "Okänd produkt",
+        brand: p.brands || "",
+        calories: kcal || 0,
+        protein: Number(n.proteins_100g) || 0,
+        carbs: Number(n.carbohydrates_100g) || 0,
+        fat: Number(n.fat_100g) || 0
+      };
+
+      $s("scannerProductName").textContent =
+        currentProduct.name +
+        (currentProduct.brand ? " – " + currentProduct.brand : "");
+
+      $s("scannerNutrition").textContent =
+        Math.round(currentProduct.calories) + " kcal · " +
+        currentProduct.protein.toFixed(1) + " g protein · " +
+        currentProduct.carbs.toFixed(1) + " g kolhydrater · " +
+        currentProduct.fat.toFixed(1) + " g fett per 100 g";
+
+      $s("scannerProduct").hidden = false;
+      message("Produkten hittades! Ange mängden i gram.");
+    }catch(error){
+      message("Kunde inte hämta produkten. Kontrollera internet.");
+    }
+  }
+
+  async function startScanner(){
+    try{
+      await loadScannerLibrary();
+
+      if(!scanner){
+        scanner = new Html5Qrcode("foodScannerCamera");
+      }
+
+      $s("foodScannerView").hidden = false;
+      message("Startar kameran...");
+
+      await scanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 250, height: 150 } },
+        code => {
+          if(scannerBusy) return;
+          scannerBusy = true;
+
+          lookupBarcode(code).finally(()=>{
+            stopScanner();
+            scannerBusy = false;
+          });
+        },
+        () => {}
+      );
+
+      message("Rikta kameran mot streckkoden.");
+    }catch(error){
+      message("Kameran kunde inte startas. Kontrollera kameratillståndet.");
+    }
+  }
+
+  async function stopScanner(){
+    if(scanner && scanner.isScanning){
+      try{
+        await scanner.stop();
+      }catch(error){}
+    }
+
+    if($s("foodScannerView")){
+      $s("foodScannerView").hidden = true;
+    }
+  }
+
+  $s("startFoodScanner").addEventListener("click",startScanner);
+
+  $s("stopFoodScanner").addEventListener("click",stopScanner);
+
+  $s("lookupFoodBarcode").addEventListener("click",()=>{
+    lookupBarcode($s("foodBarcode").value.trim());
+  });
+
+  $s("saveScannedFood").addEventListener("click",()=>{
+    if(!currentProduct){
+      return message("Skanna eller sök efter en produkt först.");
+    }
+
+    const grams = Number($s("scannerGrams").value);
+
+    if(!grams || grams <= 0){
+      return message("Ange mängden i gram.");
+    }
+
+    const factor = grams / 100;
+
+    const food = {
+      name: currentProduct.name,
+      calories: Math.round(currentProduct.calories * factor),
+      protein: Number((currentProduct.protein * factor).toFixed(1)),
+      carbs: Number((currentProduct.carbs * factor).toFixed(1)),
+      fat: Number((currentProduct.fat * factor).toFixed(1))
+    };
+
+    dayData().foods.push(food);
+    saveCalories();
+    renderCalories();
+
+    try{
+      const key = "omega-food-library-v1";
+      const library = JSON.parse(localStorage.getItem(key) || "[]");
+
+      if(Array.isArray(library)){
+        const exists = library.some(item =>
+          item.barcode === currentProduct.barcode
+        );
+
+        if(!exists){
+          library.push({
+            ...currentProduct,
+            barcode: currentProduct.barcode
+          });
+          localStorage.setItem(key,JSON.stringify(library));
+        }
+      }
+    }catch(error){}
+
+    currentProduct = null;
+    $s("scannerProduct").hidden = true;
+    $s("scannerGrams").value = "";
+    $s("foodBarcode").value = "";
+
+    message("Produkten har lagts till i måltiden!");
+  });
+
+})();
+
 })();
 
 if("serviceWorker" in navigator&&location.protocol.startsWith("http")){
