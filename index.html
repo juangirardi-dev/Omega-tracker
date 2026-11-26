@@ -335,6 +335,11 @@ Du kan alltid ändra vikten själv.
     <button class="lime" id="addFood" style="width:100%;margin-top:16px">
       + LÄGG TILL MAT
     </button>
+    <button type="button" id="openFoodLibrary">
+  📚 VÄLJ FRÅN BIBLIOTEK
+</button>
+
+<div id="foodLibraryList" hidden></div>
     <p class="muted" id="foodMessage"></p>
   </section>
 
@@ -1337,7 +1342,62 @@ localStorage.setItem(
     cal("weightMessage").textContent =
       "Kroppsvikten har sparats.";
   });
+// OMEGA FOOD LIBRARY – VISA SPARADE LIVSMEDEL
+const libraryButton = cal("openFoodLibrary");
+const libraryList = cal("foodLibraryList");
+const libraryStorageKey = "omega-food-library-v1";
 
+libraryButton.addEventListener("click", function () {
+  libraryList.hidden = !libraryList.hidden;
+
+  if (libraryList.hidden) return;
+
+  let savedFoods = [];
+
+  try {
+    savedFoods = JSON.parse(
+      localStorage.getItem(libraryStorageKey) || "[]"
+    );
+  } catch (error) {
+    savedFoods = [];
+  }
+
+  libraryList.innerHTML = "";
+
+  if (savedFoods.length === 0) {
+    libraryList.textContent = "Biblioteket är tomt ännu.";
+    return;
+  }
+
+  savedFoods.forEach(function (food, index) {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "exercise";
+    item.style.display = "block";
+    item.style.width = "100%";
+    item.style.marginTop = "10px";
+
+    item.textContent =
+      food.name + " – " + food.calories + " kcal";
+
+    item.addEventListener("click", function () {
+      dayData().foods.push({
+        name: food.name,
+        calories: Number(food.calories) || 0,
+        protein: Number(food.protein) || 0,
+        carbs: Number(food.carbs) || 0,
+        fat: Number(food.fat) || 0
+      });
+
+      saveCalories();
+      renderCalories();
+
+      libraryList.hidden = true;
+    });
+
+    libraryList.appendChild(item);
+  });
+});
 })();
 
 if("serviceWorker" in navigator&&location.protocol.startsWith("http")){
