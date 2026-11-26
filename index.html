@@ -358,16 +358,21 @@ Du kan alltid ändra vikten själv.
     </button>
   </div>
 
-  <label class="muted" style="display:block;margin-top:14px">
+<div id="foodScannerManual" style="position:relative;z-index:50;clear:both;margin-top:14px;pointer-events:auto">
+  <label class="muted" style="display:block">
     Eller skriv streckkoden
   </label>
-  <input id="foodBarcode" type="text"
-    inputmode="numeric" placeholder="Streckkod"
-    style="width:100%">
 
-  <button id="lookupFoodBarcode" style="width:100%;margin-top:10px">
+  <input id="foodBarcode" type="text"
+    inputmode="numeric"
+    placeholder="Streckkod"
+    style="width:100%;position:relative;z-index:51;pointer-events:auto">
+
+  <button type="button" id="lookupFoodBarcode"
+    style="width:100%;margin-top:10px;position:relative;z-index:52;pointer-events:auto">
     SÖK PRODUKT
   </button>
+</div>
 
   <p class="muted" id="scannerMessage"></p>
 
