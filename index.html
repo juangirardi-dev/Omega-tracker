@@ -304,12 +304,62 @@ Du kan alltid ändra vikten själv.
     </div>
 
     <div class="row" style="margin-top:18px">
-      <span class="muted">Kalorimål: 2 294 kcal</span>
+     <span class="muted" id="calorieGoalLabel">Kalorimål: 2 294 kcal</span>
       <b id="calRemaining">2 294 kvar</b>
     </div>
     <div class="track"><div class="fill" id="calBar"></div></div>
     <p class="muted" id="fatTotal">Fett: 0 / 89 g</p>
   </section>
+
+<section class="card" id="omegaNutritionProfile">
+  <h2>Ω PERSONLIGT NÄRINGSMÅL</h2>
+  <p class="muted">VÄLJ DITT MÅL</p>
+
+  <div class="choices" id="nutritionGoalButtons">
+    <button type="button" data-goal="muscle">BYGGA MUSKLER</button>
+    <button type="button" data-goal="loss">GÅ NER I VIKT</button>
+    <button type="button" data-goal="maintain">BEHÅLLA VIKTEN</button>
+  </div>
+  <div class="fields" style="margin-top:14px">
+  <label>Kön
+    <select id="nutritionSex">
+      <option value="male">Man</option>
+      <option value="female">Kvinna</option>
+    </select>
+  </label>
+
+  <label>Ålder
+    <input id="nutritionAge" type="number" placeholder="År">
+  </label>
+
+  <label>Längd (cm)
+    <input id="nutritionHeight" type="number" placeholder="cm">
+  </label>
+
+  <label>Vikt (kg)
+    <input id="nutritionWeight" type="number" step="0.1" placeholder="kg">
+  </label>
+</div>
+<label class="muted">Aktivitetsnivå</label>
+<select id="nutritionActivity" style="width:100%">
+  <option value="1.2">Låg – stillasittande</option>
+  <option value="1.375">Lätt – 1–3 träningsdagar</option>
+  <option value="1.55" selected>Medel – 3–5 träningsdagar</option>
+  <option value="1.725">Hög – 6–7 träningsdagar</option>
+</select>
+
+
+<button class="lime" id="calculateNutrition" type="button" style="width:100%;margin-top:16px">
+  BERÄKNA MITT NÄRINGSMÅL
+</button>
+
+<p class="muted" id="nutritionProfileMessage"></p>
+
+<div id="nutritionProfileResult" hidden>
+  <b id="nutritionResultTitle"></b>
+  <p id="nutritionResultValues"></p>
+</div>
+</section>
 
   <section class="card">
     <h2>LÄGG TILL MÅLTID</h2>
@@ -1171,6 +1221,46 @@ clock();
 
   const cal = id => document.getElementById(id);
 
+  const profileKey = "omega-calorie-profile-v1";
+
+  let nutritionProfile = {};
+  try {
+    nutritionProfile = JSON.parse(
+      localStorage.getItem(profileKey)
+    ) || {};
+  } catch(e) {
+    nutritionProfile = {};
+  }
+
+  let nutritionTargets = nutritionProfile.targets || {
+    calories: 2294,
+    protein: 229,
+    carbs: 143,
+    fat: 89
+  };
+
+  function setGoalButton(){
+    document.querySelectorAll(
+      "#nutritionGoalButtons [data-goal]"
+    ).forEach(button => {
+      button.classList.toggle(
+        "active",
+        button.dataset.goal === nutritionProfile.goal
+      );
+    });
+  }
+
+  document.querySelectorAll(
+    "#nutritionGoalButtons [data-goal]"
+  ).forEach(button => {
+    button.addEventListener("click", () => {
+      nutritionProfile.goal = button.dataset.goal;
+      setGoalButton();
+      cal("nutritionProfileMessage").textContent =
+        "Mål valt. Fyll i din profil.";
+    });
+  });
+
   const today = new Date().toLocaleDateString("sv-SE");
 
   cal("calDate").value = today;
@@ -1196,6 +1286,91 @@ clock();
     return calorieData[date];
   }
 
+function calculateNutrition(){
+  const goal = nutritionProfile.goal;
+  const sex = cal("nutritionSex").value;
+  const age = Number(cal("nutritionAge").value);
+  const height = Number(cal("nutritionHeight").value);
+  const weight = Number(cal("nutritionWeight").value);
+  const activity = Number(cal("nutritionActivity").value);
+
+  if(!goal){
+    cal("nutritionProfileMessage").textContent =
+      "Välj ett mål först.";
+    return;
+  }
+
+  if(!age || age < 18 || age > 100 ||
+     !height || height < 120 || height > 230 ||
+     !weight || weight < 35 || weight > 300){
+    cal("nutritionProfileMessage").textContent =
+      "Kontrollera ålder, längd och vikt.";
+    return;
+  }
+
+  const bmr = 10 * weight + 6.25 * height -
+    5 * age + (sex === "male" ? 5 : -161);
+
+  const maintenance = bmr * activity;
+
+  let calories = maintenance;
+
+  if(goal === "muscle") calories += 200;
+  if(goal === "loss") calories *= 0.85;
+
+  const protein = Math.round(weight * 2);
+  const fat = Math.round(weight * 0.8);
+  const carbs = Math.max(0, Math.round(
+    (calories - protein * 4 - fat * 9) / 4
+  ));
+
+  nutritionTargets = {
+    calories: Math.round(calories / 10) * 10,
+    protein,
+    carbs,
+    fat
+  };
+cal("calorieGoalLabel").textContent =
+  "Kalorimål: " +
+  nutritionTargets.calories.toLocaleString("sv-SE") +
+  " kcal";
+  nutritionProfile.sex = sex;
+  nutritionProfile.age = age;
+  nutritionProfile.height = height;
+  nutritionProfile.weight = weight;
+  nutritionProfile.activity = activity;
+  nutritionProfile.targets = nutritionTargets;
+
+  localStorage.setItem(
+    profileKey,
+    JSON.stringify(nutritionProfile)
+  );
+
+  cal("nutritionProfileMessage").textContent =
+    "Dina personliga mål är sparade.";
+
+  cal("nutritionResultTitle").textContent =
+    "DINA DAGLIGA NÄRINGSMÅL";
+
+  cal("nutritionResultValues").textContent =
+    nutritionTargets.calories + " kcal · Protein " +
+    protein + " g · Kolhydrater " + carbs +
+    " g · Fett " + fat + " g";
+
+  cal("nutritionProfileResult").hidden = false;
+}
+
+cal("calculateNutrition").addEventListener(
+  "click",
+  calculateNutrition
+);
+if(nutritionProfile.sex) cal("nutritionSex").value = nutritionProfile.sex;
+if(nutritionProfile.age) cal("nutritionAge").value = nutritionProfile.age;
+if(nutritionProfile.height) cal("nutritionHeight").value = nutritionProfile.height;
+if(nutritionProfile.weight) cal("nutritionWeight").value = nutritionProfile.weight;
+if(nutritionProfile.activity) cal("nutritionActivity").value = String(nutritionProfile.activity);
+
+setGoalButton();
   function renderCalories(){
 
     const day = dayData();
@@ -1218,14 +1393,14 @@ cal("calTotal").textContent = Math.round(totals.calories);
 cal("proteinTotal").textContent = totals.protein.toLocaleString("sv-SE", {maximumFractionDigits:1}) + " g";
 cal("carbTotal").textContent = totals.carbs.toLocaleString("sv-SE", {maximumFractionDigits:1}) + " g";
 cal("fatTotal").textContent = "Fett: " +
-  totals.fat.toLocaleString("sv-SE", {maximumFractionDigits:1}) + " / 89 g";
+  .toLocaleString("sv-SE", {maximumFractionDigits:1}) + " / " + nutritionTargets.fat + " g";
 
 
-    cal("calRemaining").textContent =
-      Math.round(2294 - totals.calories) + " kvar";
+   cal("calRemaining").textContent =
+  Math.round(nutritionTargets.calories - totals.calories) + " kvar";
 
-    cal("calBar").style.width =
-      Math.min(100, totals.calories / 2294 * 100) + "%";
+cal("calBar").style.width =
+  Math.min(100, totals.calories / nutritionTargets.calories * 100) + "%";
 
     cal("foodList").innerHTML = day.foods.length
       ? day.foods.map((f,i)=>`
