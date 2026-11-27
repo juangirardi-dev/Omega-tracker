@@ -1392,8 +1392,11 @@ setGoalButton();
 cal("calTotal").textContent = Math.round(totals.calories);
 cal("proteinTotal").textContent = totals.protein.toLocaleString("sv-SE", {maximumFractionDigits:1}) + " g";
 cal("carbTotal").textContent = totals.carbs.toLocaleString("sv-SE", {maximumFractionDigits:1}) + " g";
+
+
 cal("fatTotal").textContent = "Fett: " +
-  .toLocaleString("sv-SE", {maximumFractionDigits:1}) + " / " + nutritionTargets.fat + " g";
+  totals.fat.toLocaleString("sv-SE", {maximumFractionDigits:1}) +
+  " / " + nutritionTargets.fat + " g";
 
 
    cal("calRemaining").textContent =
