@@ -362,7 +362,10 @@ Du kan alltid ändra vikten själv.
 </section>
 
   <section class="card">
-    <h2>LÄGG TILL MÅLTID</h2>
+    <details class="omega-fold">
+  <summary style="background:#B6FF00;color:#101510;padding:15px;border-radius:12px;font-weight:900;cursor:pointer;list-style:none;">
+    ＋ LÄGG TILL MÅLTID
+  </summary>
 
     <label class="muted">Mat / livsmedel</label>
     <input id="foodName" type="text" placeholder="Ex. kyckling och ris" style="width:100%">
@@ -388,9 +391,11 @@ Du kan alltid ändra vikten själv.
     <button type="button" id="openFoodLibrary">
   📚 VÄLJ FRÅN BIBLIOTEK
 </button>
+     
 
-<div id="foodLibraryList" hidden></div>
+
     <p class="muted" id="foodMessage"></p>
+ </details>
   </section>
 
 <section class="card" id="omegaFoodScanner">
